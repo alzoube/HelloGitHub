@@ -1,0 +1,254 @@
+
+<!DOCTYPE HTML>
+<html>
+    <head>
+        <style>
+            canvas {
+                border: 1px solid black;
+                font-family: "Helvetica Neue", "Arial", "Lucida Grande", "Lucida Sans Unicode", "Microsoft YaHei", sans-serif;
+                font-size: 13px;
+                line-height: 1.5;
+                color: #474747;
+                background: transparent;
+            }
+            
+            #toolbar {
+                width: 590px;
+                border: 1px solid black;
+                border-bottom: 0px;
+                padding: 5px;
+                background-color: #f8f8f8;
+            }
+            
+            input[type = 'text'] {
+                width: 30px;
+				margin: 0px 5px 0px 5px;
+            }
+            
+            label {
+                margin-left: 40px;
+            }
+            
+            label:first-of-type {
+                margin-left: 0px;
+            }
+            
+            input[type = 'button'] {
+                float: right;
+            }
+            
+            #colorSquare {
+                position: relative;
+                display: inline-block;
+                width: 20px;
+                height: 20px;
+                background-color: rgb(255, 0, 106);
+                top: 4px;
+            }
+        </style>
+        <script src="events.js">
+        </script>
+        <script>
+            function addPoint(events, points){
+
+                console.log("add point");
+
+
+                var context = events.getContext();
+                var drawingPos = events.getMousePos();
+                
+                if (drawingPos !== null) {
+                    points.push(drawingPos);
+                }
+            }
+            
+
+            function drawWord(canvas, word, canvasImg){
+
+                console.log("draw word");
+
+                var context = canvas.getContext("2d");
+                
+                // clear canvas
+                context.clearRect(0, 0, canvas.width, canvas.height);
+                
+                // redraw canvas before path
+                context.drawImage(canvasImg, 0, 0, canvas.width, canvas.height);
+
+                //Draw word
+                context.beginPath();
+                context.font = "160pt Calibri";
+                context.fillStyle = "white";
+                context.strokeStyle = "orange";
+                context.textAlign = "center";
+                
+                // align text vertically center
+                context.textBaseline = "middle";
+                //context.fillText(word, canvas.width / 2, 100);
+                context.strokeText(word, canvas.width / 2, 120);
+
+            }
+
+
+
+            function drawPath(canvas, points, canvasImg){
+
+
+                console.log("draw path");
+
+                var context = canvas.getContext("2d");
+                
+                // clear canvas
+               // context.clearRect(0, 0, canvas.width, canvas.height);
+                
+                // redraw canvas before path
+                context.drawImage(canvasImg, 0, 0, canvas.width, canvas.height);
+                
+                // draw patch
+                context.beginPath();
+                context.lineTo(points[0].x, points[0].y);
+                for (var n = 1; n < points.length; n++) {
+                    var point = points[n];
+                    context.lineTo(point.x, point.y);
+                }
+                context.stroke();
+            }
+            
+            function updateColorSquare(){
+                var red = document.getElementById("red").value;
+                var green = document.getElementById("green").value;
+                var blue = document.getElementById("blue").value;
+                
+                var colorSquare = document.getElementById("colorSquare");
+                colorSquare.style.backgroundColor = "rgb(" + red + "," + green + "," + blue + ")";
+            }
+            
+            function getCanvasImg(canvas){
+
+                console.log("get image");
+                var img = new Image();
+                img.src = canvas.toDataURL();
+                return img;
+            }
+            
+            window.onload = function(){
+                var events = new Events("myCanvas");
+                var canvas = events.getCanvas();
+                var context = events.getContext();
+                var isMouseDown = false;
+                var canvasImg = getCanvasImg(canvas);
+                var points = [];
+                
+                
+                document.getElementById("clearButton").addEventListener("click", function(evt){
+                    events.clear();
+                    points = [];
+                    canvasImg = getCanvasImg(canvas);
+                }, false);
+                
+                // document.getElementById("saveButton").addEventListener("click", function(evt){
+                //     // open new window with saved image so user
+                //     // can right click and save to their computer
+                //     window.open(canvas.toDataURL());
+                // }, false);
+            
+                
+
+
+
+                canvas.addEventListener("mousedown", function(){
+
+
+                    console.log("down");
+
+                    var drawingPos = events.getMousePos();
+                    
+                    // update drawing params
+
+                    size = document.getElementById("textsize").value;
+                    
+                    // start drawing path
+                
+                    context.strokeStyle = document.getElementById("clr").value;
+
+                    context.lineWidth = size;
+                    context.lineJoin = "round";
+                    context.lineCap = "round";
+                    addPoint(events, points);
+                    isMouseDown = true;
+                }, false);
+                
+
+
+
+
+
+                canvas.addEventListener("mouseup", function(){
+
+                    console.log("up");
+
+
+                    isMouseDown = false;
+                    if (points.length > 0) {
+                        drawPath(this, points, canvasImg);
+                        // reset points
+                        points = [];
+                    }
+                    canvasImg = getCanvasImg(this);
+                }, false);
+         
+                
+
+
+                canvas.addEventListener("mouseout", function(){
+
+                    console.log("out");
+
+
+                    if (document.createEvent) {
+                        var evt = document.createEvent('MouseEvents');
+                        evt.initEvent("mouseup", true, false);
+                        this.dispatchEvent(evt);
+                    }
+                    else {
+                        this.fireEvent("onmouseup");
+                    }
+                }, false);
+             
+                
+                drawWord(canvas, "PSUT", canvasImg);
+
+                events.setStage(function(){
+                    console.log("set stage");
+                    if (isMouseDown) {
+
+                        addPoint(this, points);
+                        drawPath(canvas, points, canvasImg);
+                    }
+                });
+            };
+        </script>
+    </head>
+    <body>
+        <div id="toolbar">
+            <label for="clr">
+                Color
+            </label>    
+ 
+          
+                <input type="color" id="clr"   value="#f6b73c">
+                
+           
+            <label>
+                Size:
+            </label>
+           
+            <input type="range" id="textsize" min="10" max="40" value="20" step="5">
+
+            <input type="button" id="clearButton" value="Clear">
+            <!-- <input type="button" id="saveButton" value="Save"> -->
+        </div>
+        <canvas id="myCanvas" width="600" height="250">
+        </canvas>
+    </body>
+</html>
